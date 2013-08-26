@@ -9,8 +9,8 @@
         this.data = dataObj;
         this.get = function(fieldName){
             return this.data[fieldName];
-        }
-    }
+        };
+    };
     Krest.CMSObjectDefinition = function(name,parentName){
         var self = this;
         this.name = name;
@@ -32,6 +32,11 @@
                     cb(JSON.parse(response));
                 }
             });
+        };
+        this.render = function(elem, templateId){
+            if(Krest.Renderer){
+                Krest.Renderer.render(this, elem, templateId);
+            }
         }
     };
     Krest.CMSDocument = function(nodeClassID, className, dataObj){
@@ -40,7 +45,7 @@
         this.data = dataObj;
         this.get = function(fieldName){
             return this.data[fieldName];
-        }
+        };
         this.getChildren = function(cb){
             var url = Krest.URLBuilder.buildChildrenURL(this.get('NodeAliasPath'));
             var req = snack.request({
@@ -49,16 +54,25 @@
                 if(err){
                     throw new Error(err);
                 }
-                
                 cb(JSON.parse(response).cms_documents);
             });
+        };
+        this.go = function(){
+            if(Krest.StateManager){
+                Krest.StateManager.documentState(this);
+            }
+        };
+        this.render = function(elem, templateId){
+            if(Krest.Renderer){
+                Krest.Renderer.render(this, elem, templateId);
+            }
         }
     };
     Krest.Namespace = function(name){
         this.name = name;
         this.addObject = function(name){
             this[name] = new Krest.CMSObjectDefinition(name, this.name);
-        }
+        };
     };
     Krest.CMS = new Krest.Namespace('CMS');
     Krest.DOMAIN = window.location.protocol + "//" + window.location.host;
@@ -99,10 +113,18 @@
                     var doc = new Krest.CMSDocument(cleanResponse.NodeClassID, cleanResponse.ClassName, cleanResponse);
                     cb(doc);
                 });
-
         }
     };
     
+    Krest.on = function(selector, evt, cb){
+        var elem = snack.wrap(document.querySelectorAll(selector));
+        
+        if(elem){
+            elem.each(function(el){
+                el.addEventListener(evt, cb);
+            });
+        }
+    };
     
     if(window.Handlebars){
         Krest.Renderer = Object.create(null);
@@ -112,8 +134,17 @@
             var html = template(object.data);
             var targetEl = document.querySelector(targetSelector);
             targetEl.innerHTML = html;
-        }
+        };
     }
+    
+    if(window.history.pushState){
+        Krest.StateManager = Object.create(null);
+        Krest.StateManager.documentState = function(cmsDoc){
+            var docPath = cmsDoc.get('NodeAliasPath');
+            history.pushState(null, null, docPath);
+        };
+    }
+    
 
     window.Krest = Krest;
 })(window);
