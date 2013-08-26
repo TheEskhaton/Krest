@@ -2,7 +2,11 @@
     'use strict';
     
     var Krest = Object.create(null);
-    
+
+    Krest.Loader = Object.create(null);
+    Krest.Loader.start = function(){};
+    Krest.Loader.stop = function(){};
+
     Krest.CMSObject = function(objectID, objectType, dataObj){
         this.objectID = objectID;
         this.objectType = objectType;
@@ -18,6 +22,7 @@
 
         this.find = function(where,cb){
             var url = Krest.URLBuilder.build(this.parentName+'.'+this.name,where);
+            Krest.Loader.start();
             var req = snack.request({
 	                url: url
                 }, function(err, response){
@@ -31,6 +36,7 @@
                 else{
                     cb(JSON.parse(response));
                 }
+                Krest.Loader.stop();
             });
         };
         this.render = function(elem, templateId){
@@ -48,6 +54,7 @@
         };
         this.getChildren = function(cb){
             var url = Krest.URLBuilder.buildChildrenURL(this.get('NodeAliasPath'));
+            Krest.Loader.start();
             var req = snack.request({
 	                url: url
                 }, function(err, response){
@@ -55,6 +62,7 @@
                     throw new Error(err);
                 }
                 cb(JSON.parse(response).cms_documents);
+                Krest.Loader.stop();
             });
         };
         this.go = function(){
@@ -74,9 +82,13 @@
             this[name] = new Krest.CMSObjectDefinition(name, this.name);
         };
     };
+    Krest.setupEndpoint = function(){
+        Krest.ENDPOINT = Krest.DOMAIN + Krest.BASEPATH + '/rest/'; 
+    }
     Krest.CMS = new Krest.Namespace('CMS');
     Krest.DOMAIN = window.location.protocol + "//" + window.location.host;
-    Krest.ENDPOINT = Krest.DOMAIN + '/rest/'; 
+    Krest.BASEPATH = "";
+    Krest.ENDPOINT = Krest.DOMAIN + Krest.BASEPATH + '/rest/'; 
     Krest.FORMAT = 'json';
     Krest.CULTURE = 'en-US';
     Krest.URLBuilder = {
@@ -103,6 +115,7 @@
     Krest.Content = {
         find : function(className, aliasPath, cb){
                 var url = Krest.URLBuilder.buildContentURL(aliasPath);
+                Krest.Loader.start();
                 var req = snack.request({
 	                    url: url
                     }, function(err, response){
@@ -112,6 +125,7 @@
                     var cleanResponse = JSON.parse(response).cms_documents[0][className.replace('.', '_')][0];
                     var doc = new Krest.CMSDocument(cleanResponse.NodeClassID, cleanResponse.ClassName, cleanResponse);
                     cb(doc);
+                    Krest.Loader.stop();
                 });
         }
     };
@@ -141,7 +155,7 @@
         Krest.StateManager = Object.create(null);
         Krest.StateManager.documentState = function(cmsDoc){
             var docPath = cmsDoc.get('NodeAliasPath');
-            history.pushState(null, null, docPath);
+            history.pushState(null, null, Krest.BASEPATH+docPath);
         };
     }
     
