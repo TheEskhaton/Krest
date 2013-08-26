@@ -14,6 +14,11 @@
         this.get = function(fieldName){
             return this.data[fieldName];
         };
+        this.render = function(elem, templateId){
+            if(Krest.Renderer){
+                Krest.Renderer.render(this, elem, templateId);
+            }
+        }
     };
     Krest.CMSObjectDefinition = function(name,parentName){
         var self = this;
@@ -39,11 +44,7 @@
                 Krest.Loader.stop();
             });
         };
-        this.render = function(elem, templateId){
-            if(Krest.Renderer){
-                Krest.Renderer.render(this, elem, templateId);
-            }
-        }
+
     };
     Krest.CMSDocument = function(nodeClassID, className, dataObj){
         this.nodeClassID = nodeClassID;
